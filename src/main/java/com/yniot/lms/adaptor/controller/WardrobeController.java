@@ -15,13 +15,13 @@ public class WardrobeController {
 
     public static final Integer HEARTBEAT_RES_DATA = 0x00;
 
-    
+
     /**
+     * @return byte[]
      * @Author wanggl(lane)
      * @Description //TODO 获取服务端对心跳包的回复包
      * @Date 17:13 2018-12-27
      * @Param [address]
-     * @return byte[]
      **/
     public byte[] heartbeatResponse(int address) throws UnsupportedEncodingException {
         LmsPacket lmsPacket = new LmsPacket(address, LmsPacket.HEARTBEAT, HEARTBEAT_RES_DATA);
@@ -64,25 +64,43 @@ public class WardrobeController {
         return lmsPacket.getFullPack();
     }
 
+
     /**
+     * @return byte[]
+     * @Author wanggl(lane)
+     * @Description //TODO 获取[获取设备ID]的命令
+     * @Date 17:06 2018-12-27
+     * @Param [address, port]
+     **/
+    public byte[] getDeviceId(int address) {
+        LmsPacket lmsPacket = new LmsPacket(address, LmsPacket.DEVICE_ID);
+        return lmsPacket.getFullPack();
+    }
+
+    public int parseID(int address, LmsPacket lmsPacket) {
+        List<Integer> data = lmsPacket.getData();
+        return -1;
+    }
+
+    /**
+     * @return byte[]
      * @Author wanggl(lane)
      * @Description //TODO 获取[获取所有锁的状态]的命令
      * @Date 17:10 2018-12-27
      * @Param [address]
-     * @return byte[]
      **/
     public byte[] getStateCmd(int address) {
         LmsPacket lmsPacket = new LmsPacket(address, LmsPacket.ALL_STATE);
         return lmsPacket.getFullPack();
     }
 
-    
+
     /**
+     * @return byte[]
      * @Author wanggl(lane)
      * @Description //TODO 获取[主动上传门状态]的命令
      * @Date 17:11 2018-12-27
      * @Param [address]
-     * @return byte[]
      **/
     public byte[] autoUploadState(int address) {
         LmsPacket lmsPacket = new LmsPacket(address, LmsPacket.UPLOAD_STATE);
@@ -93,7 +111,7 @@ public class WardrobeController {
      * @return int
      * 返回:1 关闭 0 开门 -1 未知
      * @Author wanggl(lane)
-     * @Description //TODO
+     * @Description //TODO  根据packet获得目标通道的状态
      * @Date 17:03 2018-12-27
      * @Param [address, targetPort, lmsPacket]
      **/
@@ -110,5 +128,13 @@ public class WardrobeController {
         }
         return -1;
     }
+
+    private boolean isMatch(int address, LmsPacket lmsPacket) {
+        if (lmsPacket == null) {
+            return false;
+        }
+        return lmsPacket.getAddress() == address;
+    }
+
 
 }

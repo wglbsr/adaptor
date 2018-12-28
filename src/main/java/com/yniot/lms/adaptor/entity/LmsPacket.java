@@ -77,7 +77,6 @@ public class LmsPacket extends Packet {
             tempData.add(d);
         }
         this.data = tempData;
-//        this.getBody();
     }
 
     public LmsPacket(Integer address, Integer cmd, List<Integer> data) {
@@ -86,7 +85,6 @@ public class LmsPacket extends Packet {
         if (data != null && !data.isEmpty()) {
             this.data = data;
         }
-//        this.getBody();
     }
 
 
@@ -138,17 +136,6 @@ public class LmsPacket extends Packet {
     }
 
 
-//    //长度校验
-//    private boolean checkLength(List<Integer> message) {
-//        if (message.get(LENGTH_INDEX) == message.size()) {
-//            this.length = message.get(LENGTH_INDEX);
-//            return true;
-//        }
-//        logger.info("长度不匹配!");
-//        return false;
-//    }
-
-
     //是否超过255  即是否大于1字节
     private static boolean checkEveryByte(List<Integer> message) {
         for (Integer integer : message) {
@@ -189,7 +176,7 @@ public class LmsPacket extends Packet {
         return calculateCheck.intValue() == check.intValue();
     }
 
-    public byte[] getBody() throws UnsupportedEncodingException {
+    public byte[] getBody() {
         byte[] fullPack = this.getFullPack();
         int bodySize = this.getFullPack().length - HEADER_LENGTH;
         byte[] body = new byte[bodySize];
@@ -235,42 +222,6 @@ public class LmsPacket extends Packet {
         return resultByte;
     }
 
-    private String fromIntList(List<Integer> integerList) {
-        String result = "";
-        for (Integer integer : integerList) {
-            //添加空格
-            result += autoAppendZero(integer);
-//            result += SEPARATOR + autoAppendZero(integer);
-        }
-        return result;
-    }
-
-
-    private String autoAppendZero(Integer value) {
-        String newVal = Integer.toHexString(value.intValue());
-        if (newVal.length() == 1) {
-            return "0" + newVal;
-        } else {
-            return newVal;
-        }
-    }
-
-    //接收消息
-    private List<Integer> received(String message) {
-        List<Integer> result = new ArrayList<>();
-        if (!StringUtils.isEmpty(message)) {
-            String[] messageList = message.split(SEPARATOR);
-            for (String temp : messageList) {
-                result.add(strToHexInt(temp));
-            }
-        }
-        //长度小于LENGTH_MIN则为无效数据
-        if (result.size() < LENGTH_MIN) {
-            return null;
-        }
-        return result;
-    }
-
 
     //0x4E 0x42 0x53 0x45
     private static Integer getCheckXOR(List<Integer> beforeCheck) {
@@ -282,16 +233,6 @@ public class LmsPacket extends Packet {
         return firstByte;
     }
 
-    /**
-     * @return int
-     * @Author wanggl(lane)
-     * @Description //TODO 字符转16进制
-     * @Date 17:14 2018-12-26
-     * @Param [data]
-     **/
-    private Integer strToHexInt(String data) {
-        return Integer.valueOf(data, RADIX);
-    }
 
     private Integer length;
 
