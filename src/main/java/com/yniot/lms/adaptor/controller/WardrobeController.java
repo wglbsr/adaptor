@@ -2,7 +2,7 @@ package com.yniot.lms.adaptor.controller;
 
 import com.yniot.lms.adaptor.entity.LmsPacket;
 
-import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -23,7 +23,7 @@ public class WardrobeController {
      * @Date 17:13 2018-12-27
      * @Param [address]
      **/
-    public byte[] heartbeatResponse(int address) throws UnsupportedEncodingException {
+    public byte[] heartbeatResponse(int address) {
         LmsPacket lmsPacket = new LmsPacket(address, LmsPacket.HEARTBEAT, HEARTBEAT_RES_DATA);
         return lmsPacket.getBody();
     }
@@ -47,7 +47,7 @@ public class WardrobeController {
      * @Date 16:53 2018-12-27
      * @Param [address]
      **/
-    public byte[] getOpenCmd(int address) throws UnsupportedEncodingException {
+    public byte[] getOpenCmd(int address) {
         LmsPacket lmsPacket = new LmsPacket(address, LmsPacket.OPEN_ALL);
         return lmsPacket.getFullPack();
     }
@@ -77,9 +77,38 @@ public class WardrobeController {
         return lmsPacket.getFullPack();
     }
 
-    public int parseID(int address, LmsPacket lmsPacket) {
+    //设备 ID 号:8 个字节，可通过配置软件对设备端进行配置。
+    public String parseToID(int address, LmsPacket lmsPacket) {
         List<Integer> data = lmsPacket.getData();
-        return -1;
+        if (data != null && isMatch(address, lmsPacket) && data.size() == LmsPacket.ID_LENGTH) {
+            StringBuffer buffer = new StringBuffer();
+            for (int val : data) {
+                buffer.append((char) val);
+            }
+            return buffer.toString();
+        } else {
+            return null;
+        }
+    }
+
+    public byte[] parseIdToBytes(String id) {
+        if (id.length() != LmsPacket.ID_LENGTH) {
+            return null;
+        }
+        byte[] idBytes = id.getBytes();
+        return idBytes;
+    }
+
+    public List<Integer> parseIdToInt(String id) {
+        if (id.length() != LmsPacket.ID_LENGTH) {
+            return null;
+        }
+        List<Integer> idList = new ArrayList<>();
+        byte[] idBytes = id.getBytes();
+        for (Byte b : idBytes) {
+            idList.add(b.intValue());
+        }
+        return idList;
     }
 
     /**
@@ -129,6 +158,13 @@ public class WardrobeController {
         return -1;
     }
 
+    /**
+     * @return boolean
+     * @Author wanggl(lane)
+     * @Description //TODO 判断地址是否一致
+     * @Date 09:25 2018-12-28
+     * @Param [address, lmsPacket]
+     **/
     private boolean isMatch(int address, LmsPacket lmsPacket) {
         if (lmsPacket == null) {
             return false;

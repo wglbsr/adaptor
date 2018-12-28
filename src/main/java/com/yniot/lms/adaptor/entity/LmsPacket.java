@@ -1,7 +1,6 @@
 package com.yniot.lms.adaptor.entity;
 
 import org.apache.log4j.Logger;
-import org.springframework.util.StringUtils;
 import org.tio.core.intf.Packet;
 
 import java.io.UnsupportedEncodingException;
@@ -30,6 +29,7 @@ public class LmsPacket extends Packet {
     public static final Integer COMMAND_INDEX = 6;
     public static final Integer DATA_START_INDEX = 7;
     public static final Integer HEARTBEAT_RES_DATA = 0x00;
+    public static final Integer ID_LENGTH = 8;
     //*控制部分*/
     //0x80 心跳包
     public static final Integer HEARTBEAT = 0x80;
@@ -56,6 +56,7 @@ public class LmsPacket extends Packet {
 
     static {
         //默认前缀
+        // 起始符:四字节，默认为“NBSE”，用户可通过配置工具修改
         header.add(0x4e);
         header.add(0x42);
         header.add(0x53);
@@ -63,7 +64,6 @@ public class LmsPacket extends Packet {
     }
 
     // 状态字节 0x00 表示执行正确，其它数 值表示执行错误。
-    // 起始符:四字节，默认为“NBSE”，用户可通过配置工具修改
     // 校验字节:从帧起始符到数据域最后一个字节逐字节的异或(XOR)值
     // 帧长度:一个字节，为从起始到校验字节的字节数，取值范围为 0x08 ~ 0xFF。
     // 注意数据域长度可以为0

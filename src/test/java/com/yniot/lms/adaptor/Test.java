@@ -1,6 +1,12 @@
 package com.yniot.lms.adaptor;
 
 import com.yniot.lms.adaptor.http.HttpService;
+import org.apache.logging.log4j.util.Chars;
+import org.springframework.util.StringUtils;
+import sun.misc.CharacterDecoder;
+
+import java.io.CharArrayReader;
+import java.nio.charset.Charset;
 
 /**
  * @Auther: lane
@@ -18,8 +24,13 @@ public class Test {
 //        for(Byte b:lmsPacket.getBody()){
 //            System.out.println(b.intValue());
 //        }
-        HttpService httpService = new HttpService();
-        httpService.getEnums(null);
+//        HttpService httpService = new HttpService();
+//        httpService.getEnums(null);
+        StringBuilder chars = new StringBuilder();
+        byte b1 = 48;
+        Byte b = new Byte(b1);
+        char c = 'a';
+        System.out.println((char)49);
 
     }
 }
