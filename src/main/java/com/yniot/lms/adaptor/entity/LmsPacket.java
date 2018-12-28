@@ -20,6 +20,9 @@ public class LmsPacket extends Packet {
     private static List<Integer> header = new ArrayList<>();
     //下标长度等常量
     public static int LENGTH_MIN = 8;
+    public static final String IP_PORT_SEPARATOR = ":";
+    public static final int IP_PORT_SUFFIX = 0x00;
+
     public static final int LENGTH_INDEX = 4;
     public static final int HEADER_LENGTH = 4;
     public static final int ADDRESS_INDEX = 5;
@@ -47,7 +50,7 @@ public class LmsPacket extends Packet {
     //0x84 查询所有状态
     public static final Integer CMD_ALL_STATE = 0x84;
     //0x85 主动上传门状态变化
-    public static final Integer CMD_UPLOAD_STATE = 0x85;
+    public static final Integer CMD_AUTO_UPLOAD = 0x85;
     //0x86 开全部锁
     public static final Integer CMD_OPEN_ALL = 0x86;
 
@@ -96,7 +99,6 @@ public class LmsPacket extends Packet {
     public LmsPacket(Integer address, Integer cmd) {
         this.address = address;
         this.command = cmd;
-//        this.getBody();
     }
 
     //默认为心跳包
@@ -331,21 +333,21 @@ public class LmsPacket extends Packet {
     /**
      * 333333333333333333
      *
-     * @return boolean
+     * @return int
      * @Author wanggl(lane)
      * @Description //TODO [开单个锁]指令的回复
      * @Date 10:34 2018-12-28
      * @Param [address, portNum, lmsPacket]
      **/
-    public boolean getOpenCmdRes(int address, int portNum, LmsPacket lmsPacket) {
+    public int getOpenCmdRes(int address, int portNum, LmsPacket lmsPacket) {
         if (isMatch(address, LmsPacket.CMD_OPEN) && lmsPacket.isOK()) {
             //状态(1)+通道号 (1)+锁状态(1)
             List<Integer> data = lmsPacket.getData();
             if (data.get(1).intValue() == portNum) {
-                return data.get(2).intValue() == LmsPacket.RES_DOOR_OPENED;
+                return data.get(2).intValue();
             }
         }
-        return false;
+        return -1;
     }
 
 
@@ -425,17 +427,19 @@ public class LmsPacket extends Packet {
 
     /**
      * 66666666666666666666666666666666666666666
-     *
+     * 此包为设备端主动上传，服务端无需组包
      * @return byte[]
      * @Author wanggl(lane)
      * @Description //TODO 获取[主动上传门状态]的命令  无回复
      * @Date 17:11 2018-12-27
      * @Param [address]
      **/
-    public static byte[] getAutoUploadStateCmd(int address) {
-        LmsPacket lmsPacket = new LmsPacket(address, LmsPacket.CMD_UPLOAD_STATE);
-        return lmsPacket.getFullPack();
-    }
+//    public static byte[] getAutoUploadStateCmd(int address) {
+//        LmsPacket lmsPacket = new LmsPacket(address, LmsPacket.CMD_AUTO_UPLOAD);
+//        return lmsPacket.getFullPack();
+//    }
+//
+
 
     /**
      * 77777777777777777777777777777
@@ -462,6 +466,84 @@ public class LmsPacket extends Packet {
      **/
     public int getOpenAllCmdRes(int address) {
         if (isMatch(address, LmsPacket.CMD_OPEN_ALL)) {
+            List<Integer> data = this.getData();
+            return data.get(0).intValue();
+        }
+        return -1;
+    }
+
+
+    public static final int PASSWORD_LENGTH = 8;
+
+    /**
+     * 88888888888888888888888
+     *
+     * @return byte[]
+     * @Author wanggl(lane)
+     * @Description //TODO 获取[修改密码]的命令  有回复
+     * @Date 16:53 2018-12-27
+     * @Param [address]
+     **/
+    public static byte[] getChangePswCmd(int address, String oldPsw, String newPsw) {
+        if (oldPsw.length() == newPsw.length() && newPsw.length() == PASSWORD_LENGTH) {
+            LmsPacket lmsPacket = new LmsPacket(address, LmsPacket.CMD_CHANGE_PASSWORD);
+            return lmsPacket.getFullPack();
+        }
+        return null;
+    }
+
+    /**
+     * 88888888888888888888888
+     *
+     * @return int
+     * @Author wanggl(lane)
+     * @Description //TODO  [修改密码]的回复
+     * @Date 11:03 2018-12-28
+     * @Param [address]
+     **/
+    public int getChangePswRes(int address, String newPsw) {
+        if (newPsw.length() == PASSWORD_LENGTH && isMatch(address, LmsPacket.CMD_CHANGE_PASSWORD)) {
+            List<Integer> data = this.getData();
+            return data.get(0).intValue();
+        }
+        return -1;
+    }
+
+
+    /**
+     * 999999999999999999999999999999
+     *
+     * @return byte[]
+     * @Author wanggl(lane)
+     * @Description //TODO 获取[修改ip和端口]的命令  有回复
+     * 密码(8)+ 服务器地址和端口号(n)
+     * 服务器地址和端口号:服务器地址可以是 IP，也可以是域名，用冒号将地址和端口分开， 字符串最后加上结束符 0x00，服务器地址最大长度为 31 字节
+     * @Date 16:53 2018-12-27
+     * @Param [address]
+     **/
+    public static byte[] getChangeIpCmd(int address, String password, String ipOrDomain, String port) {
+        List<Integer> data = new ArrayList<>();
+        StringBuffer stringBuffer = new StringBuffer();
+        stringBuffer.append(password).append(ipOrDomain).append(IP_PORT_SEPARATOR).append(port).append(IP_PORT_SUFFIX);
+        byte[] dataBytes = stringBuffer.toString().getBytes();
+        for (byte b : dataBytes) {
+            data.add(Byte.valueOf(b).intValue());
+        }
+        LmsPacket lmsPacket = new LmsPacket(address, LmsPacket.CMD_CHANGE_PASSWORD, data);
+        return lmsPacket.getFullPack();
+    }
+
+    /**
+     * 9999999999999999999999999999
+     *
+     * @return int
+     * @Author wanggl(lane)
+     * @Description //TODO  [修改ip和端口]的回复
+     * @Date 11:03 2018-12-28
+     * @Param [address]
+     **/
+    public int getChangeIpCmdRes(int address) {
+        if (isMatch(address, LmsPacket.CMD_CHANGE_PASSWORD)) {
             List<Integer> data = this.getData();
             return data.get(0).intValue();
         }
@@ -514,6 +596,13 @@ public class LmsPacket extends Packet {
 
     public boolean isHeartbeat() {
         if (this.command.intValue() == CMD_HEARTBEAT.intValue()) {
+            return true;
+        }
+        return false;
+    }
+
+    public boolean isAutoPacket() {
+        if (this.command.intValue() == CMD_AUTO_UPLOAD.intValue()) {
             return true;
         }
         return false;

@@ -208,7 +208,7 @@ public class WardrobeController {
      * @Param [address]
      **/
     public byte[] getAutoUploadStateCmd(int address) {
-        LmsPacket lmsPacket = new LmsPacket(address, LmsPacket.CMD_UPLOAD_STATE);
+        LmsPacket lmsPacket = new LmsPacket(address, LmsPacket.CMD_AUTO_UPLOAD);
         return lmsPacket.getFullPack();
     }
 
