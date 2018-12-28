@@ -20,16 +20,19 @@ public class LmsPacket extends Packet {
 
     public static String SEPARATOR = " ";
     public static int RADIX = 16;
-    public static Integer LENGTH_MIN = 8;
+    public static int LENGTH_MIN = 8;
     private static List<Integer> header = new ArrayList<>();
     public static final String CHARSET = "utf-8";
-    public static final Integer LENGTH_INDEX = 4;
-    public static final Integer HEADER_LENGTH = 4;
-    public static final Integer ADDRESS_INDEX = 5;
-    public static final Integer COMMAND_INDEX = 6;
-    public static final Integer DATA_START_INDEX = 7;
-    public static final Integer HEARTBEAT_RES_DATA = 0x00;
-    public static final Integer ID_LENGTH = 8;
+    public static final int LENGTH_INDEX = 4;
+    public static final int HEADER_LENGTH = 4;
+    public static final int ADDRESS_INDEX = 5;
+    public static final int COMMAND_INDEX = 6;
+    public static final int DATA_START_INDEX = 7;
+    public static final int HEARTBEAT_RES_DATA = 0x00;
+    public static final int ID_LENGTH = 8;
+    public static final int STATE_OK = 0x00;
+    public static final int STATE_INDEX = 0;
+
     //*控制部分*/
     //0x80 心跳包
     public static final Integer HEARTBEAT = 0x80;
@@ -100,6 +103,12 @@ public class LmsPacket extends Packet {
         this.command = HEARTBEAT;
     }
 
+    public boolean isOK() {
+        if (this.data != null && !this.data.isEmpty()) {
+            return this.data.get(STATE_INDEX) == STATE_OK;
+        }
+        return false;
+    }
 
     public static LmsPacket parse(byte[] header, byte length, byte address, byte cmd, byte[] data, byte check) throws UnsupportedEncodingException {
         LmsPacket lmsPacket = null;
@@ -197,23 +206,18 @@ public class LmsPacket extends Packet {
         byte[] resultByte = new byte[LENGTH_MIN + (this.data == null || this.data.isEmpty() ? 0 : this.data.size())];
         int index = 0;
         for (Integer b : header) {
-            resultByte[index] = b.byteValue();
-            index++;
+            resultByte[index++] = b.byteValue();
         }
         beforeCheck.addAll(header);
-        resultByte[index] = this.length.byteValue();
-        index++;
+        resultByte[index++] = this.length.byteValue();
         beforeCheck.add(this.length);
-        resultByte[index] = this.address.byteValue();
-        index++;
+        resultByte[index++] = this.address.byteValue();
         beforeCheck.add(this.address);
-        resultByte[index] = this.command.byteValue();
-        index++;
+        resultByte[index++] = this.command.byteValue();
         beforeCheck.add(this.command);
         if (this.data != null && this.data.size() > 0) {
             for (Integer b : this.data) {
-                resultByte[index] = b.byteValue();
-                index++;
+                resultByte[index++] = b.byteValue();
             }
             beforeCheck.addAll(this.data);
         }
@@ -228,7 +232,6 @@ public class LmsPacket extends Packet {
         int firstByte = beforeCheck.get(0);
         for (int i = 1; i < beforeCheck.size(); i++) {
             firstByte = firstByte ^ beforeCheck.get(i);
-            System.out.println("index:[" + i + "]," + firstByte);
         }
         return firstByte;
     }

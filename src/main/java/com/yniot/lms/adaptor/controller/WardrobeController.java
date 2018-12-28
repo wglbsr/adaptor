@@ -40,6 +40,14 @@ public class WardrobeController {
         return lmsPacket.getFullPack();
     }
 
+    public boolean openSuccess(int address, LmsPacket lmsPacket) {
+        if (isMatch(address, lmsPacket)) {
+            List<Integer> data = lmsPacket.getData();
+        }
+
+        return false;
+    }
+
     /**
      * @return byte[]
      * @Author wanggl(lane)
@@ -124,6 +132,18 @@ public class WardrobeController {
     }
 
 
+    public List<Integer> parseAllState(int address, LmsPacket lmsPacket) {
+        if (isMatch(address, lmsPacket)) {
+            List<Integer> data = lmsPacket.getData();
+            //状态是否正确,长度是否匹配
+            int stateListLength = data.size() - 2;
+            if (lmsPacket.isOK() && data.get(1).intValue() == stateListLength) {
+                return data.subList(data.get(2), data.size() - 1);
+            }
+        }
+        return null;
+    }
+
     /**
      * @return byte[]
      * @Author wanggl(lane)
@@ -148,10 +168,9 @@ public class WardrobeController {
         if (lmsPacket != null && lmsPacket.getAddress() == address) {
             // 状态(1)+通道号(1)+锁状态(1)  data的组成
             List<Integer> data = lmsPacket.getData();
-            int state = data.get(0).intValue();
             int port = data.get(1).intValue();
             int lockState = data.get(2).intValue();
-            if (targetPort == port && state == 0) {
+            if (targetPort == port && lmsPacket.isOK()) {
                 return lockState;
             }
         }

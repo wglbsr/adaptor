@@ -20,7 +20,7 @@ public class LmsServerStarter {
     //事件监听器，可以为null，但建议自己实现该接口，可以参考showcase了解些接口
     public static ServerAioListener aioListener = null;
     //一组连接共用的上下文对象
-    public static ServerGroupContext serverGroupContext = new ServerGroupContext("hello-tio-server", aioHandler, aioListener);
+    public static ServerGroupContext serverGroupContext = new ServerGroupContext("lms-wardrobe-server", aioHandler, aioListener);
     //tioServer对象
     public static TioServer tioServer = new TioServer(serverGroupContext);
     //有时候需要绑定ip，不需要则null
