@@ -100,7 +100,7 @@ public class LmsServerPacketHandler implements ServerAioHandler {
         byte[] body = helloPacket.getBody();
         if (body != null) {
 //            String str = new String(body, LmsPacket.CHARSET);
-            LmsPacket respPacket = new LmsPacket(0x00, LmsPacket.HEARTBEAT, 0x00);
+            LmsPacket respPacket = new LmsPacket(0x00, LmsPacket.CMD_HEARTBEAT, 0x00);
             Tio.send(channelContext, respPacket);
         }
         return;

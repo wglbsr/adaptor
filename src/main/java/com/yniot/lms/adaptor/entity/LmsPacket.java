@@ -17,44 +17,46 @@ import java.util.List;
  */
 public class LmsPacket extends Packet {
     private static org.apache.log4j.Logger logger = Logger.getLogger(LmsPacket.class);
-
-    public static String SEPARATOR = " ";
-    public static int RADIX = 16;
-    public static int LENGTH_MIN = 8;
     private static List<Integer> header = new ArrayList<>();
-    public static final String CHARSET = "utf-8";
+    //下标长度等常量
+    public static int LENGTH_MIN = 8;
     public static final int LENGTH_INDEX = 4;
     public static final int HEADER_LENGTH = 4;
     public static final int ADDRESS_INDEX = 5;
     public static final int COMMAND_INDEX = 6;
     public static final int DATA_START_INDEX = 7;
-    public static final int HEARTBEAT_RES_DATA = 0x00;
-    public static final int ID_LENGTH = 8;
-    public static final int STATE_OK = 0x00;
     public static final int STATE_INDEX = 0;
+    public static final int ID_LENGTH = 8;
+    public static final int HEARTBEAT_RES_DATA = 0x00;
+
+    //状态常量
+    public static final int RES_HEARTBEAT_DATA = 0x00;
+    public static final int RES_STATE_OK = 0x00;
+    public static final int RES_DOOR_CLOSED = 0x01;
+    public static final int RES_DOOR_OPENED = 0x00;
 
     //*控制部分*/
     //0x80 心跳包
-    public static final Integer HEARTBEAT = 0x80;
+    public static final Integer CMD_HEARTBEAT = 0x80;
     //0x81 获取设备 ID
-    public static final Integer DEVICE_ID = 0x81;
+    public static final Integer CMD_DEVICE_ID = 0x81;
     //0x82 开锁
-    public static final Integer OPEN = 0x82;
+    public static final Integer CMD_OPEN = 0x82;
     //0x83 读门状态
-    public static final Integer DOOR_STATE = 0x83;
+    public static final Integer CMD_DOOR_STATE = 0x83;
     //0x84 查询所有状态
-    public static final Integer ALL_STATE = 0x84;
+    public static final Integer CMD_ALL_STATE = 0x84;
     //0x85 主动上传门状态变化
-    public static final Integer UPLOAD_STATE = 0x85;
+    public static final Integer CMD_UPLOAD_STATE = 0x85;
     //0x86 开全部锁
-    public static final Integer OPEN_ALL = 0x86;
+    public static final Integer CMD_OPEN_ALL = 0x86;
 
 
     /*设置部分*/
     //0x91 设置  更改配置的密码 用于过滤非法更改配置的请求
-    public static final Integer CHANGE_PASSWORD = 0x91;
+    public static final Integer CMD_CHANGE_PASSWORD = 0x91;
     // 0x92 设置 TCP服务器地址及端口号
-    public static final Integer CHANGE_PORT = 0x92;
+    public static final Integer CMD_CHANGE_PORT = 0x92;
 
 
     static {
@@ -100,12 +102,12 @@ public class LmsPacket extends Packet {
     //默认为心跳包
     public LmsPacket(Integer address) {
         this.address = address;
-        this.command = HEARTBEAT;
+        this.command = CMD_HEARTBEAT;
     }
 
     public boolean isOK() {
         if (this.data != null && !this.data.isEmpty()) {
-            return this.data.get(STATE_INDEX) == STATE_OK;
+            return this.data.get(STATE_INDEX) == RES_STATE_OK;
         }
         return false;
     }
@@ -236,6 +238,247 @@ public class LmsPacket extends Packet {
         return firstByte;
     }
 
+    /**
+     * 1111111111111111111111
+     * 服务端进行回复
+     *
+     * @return byte[]
+     * @Author wanggl(lane)
+     * @Description //TODO 获取服务端对心跳包的回复包
+     * @Date 17:13 2018-12-27
+     * @Param [address]
+     **/
+    public static byte[] getHeartbeatRes(int address) {
+        LmsPacket lmsPacket = new LmsPacket(address, LmsPacket.CMD_HEARTBEAT, HEARTBEAT_RES_DATA);
+        return lmsPacket.getBody();
+    }
+
+
+    /**
+     * 22222222222222222222
+     *
+     * @return byte[]
+     * @Author wanggl(lane)
+     * @Description //TODO 获取[获取设备ID]的命令  有回复
+     * @Date 17:06 2018-12-27
+     * @Param [address, port]
+     **/
+    public static byte[] getDeviceIdCmd(int address) {
+        LmsPacket lmsPacket = new LmsPacket(address, LmsPacket.CMD_DEVICE_ID);
+        return lmsPacket.getFullPack();
+    }
+
+    /**
+     * 22222222222222222222
+     *
+     * @return java.lang.String
+     * @Author wanggl(lane)
+     * @Description //TODO [获取设备ID]的命令 的回复
+     * //设备 ID 号:8 个字节，可通过配置软件对设备端进行配置。
+     * @Date 10:38 2018-12-28
+     * @Param [address, lmsPacket]
+     **/
+    public String getDeviceIdCmdRes(int address) {
+        List<Integer> data = this.getData();
+        if (data != null && isMatch(address, LmsPacket.CMD_DEVICE_ID) && data.size() == LmsPacket.ID_LENGTH) {
+            StringBuffer buffer = new StringBuffer();
+            for (int val : data) {
+                buffer.append((char) val);
+            }
+            return buffer.toString();
+        } else {
+            return null;
+        }
+    }
+
+    //22222222222222222222
+    public byte[] parseIdToBytes(String id) {
+        if (id.length() != LmsPacket.ID_LENGTH) {
+            return null;
+        }
+        byte[] idBytes = id.getBytes();
+        return idBytes;
+    }
+
+    //22222222222222222222
+    public List<Integer> parseIdToInt(String id) {
+        if (id.length() != LmsPacket.ID_LENGTH) {
+            return null;
+        }
+        List<Integer> idList = new ArrayList<>();
+        byte[] idBytes = id.getBytes();
+        for (Byte b : idBytes) {
+            idList.add(b.intValue());
+        }
+        return idList;
+    }
+
+
+    /**
+     * 333333333333333333
+     *
+     * @return byte[]
+     * @Author wanggl(lane)
+     * @Description //TODO 获取[开单个锁]的命令  有回复
+     * @Date 16:50 2018-12-27
+     * @Param [address, portNum]
+     **/
+    public static byte[] getOpenCmd(int address, int portNum) {
+        LmsPacket lmsPacket = new LmsPacket(address, LmsPacket.CMD_OPEN, portNum);
+        return lmsPacket.getFullPack();
+    }
+
+    /**
+     * 333333333333333333
+     *
+     * @return boolean
+     * @Author wanggl(lane)
+     * @Description //TODO [开单个锁]指令的回复
+     * @Date 10:34 2018-12-28
+     * @Param [address, portNum, lmsPacket]
+     **/
+    public boolean getOpenCmdRes(int address, int portNum, LmsPacket lmsPacket) {
+        if (isMatch(address, LmsPacket.CMD_OPEN) && lmsPacket.isOK()) {
+            //状态(1)+通道号 (1)+锁状态(1)
+            List<Integer> data = lmsPacket.getData();
+            if (data.get(1).intValue() == portNum) {
+                return data.get(2).intValue() == LmsPacket.RES_DOOR_OPENED;
+            }
+        }
+        return false;
+    }
+
+
+    /**
+     * 4444444444444444444444
+     *
+     * @return byte[]
+     * @Author wanggl(lane)
+     * @Description //TODO 获取[获取锁的状态]的命令  有回复
+     * @Date 17:06 2018-12-27
+     * @Param [address, port]
+     **/
+    public static byte[] getStateCmd(int address, int port) {
+        LmsPacket lmsPacket = new LmsPacket(address, LmsPacket.CMD_DOOR_STATE, port);
+        return lmsPacket.getFullPack();
+    }
+
+    /**
+     * 4444444444444444444444
+     *
+     * @return int
+     * 返回:1 关闭 0 开门 -1 未知(有可能存在不匹配等情况,因此没有用布尔值)
+     * @Author wanggl(lane)
+     * @Description //TODO  根据packet获得目标通道的状态
+     * @Date 17:03 2018-12-27
+     * @Param [address, targetPort, lmsPacket]
+     **/
+    public int getStateCmdRes(int address, int targetPort) {
+        if (isMatch(address, LmsPacket.CMD_DOOR_STATE)) {
+            // 状态(1)+通道号(1)+锁状态(1)  data的组成
+            List<Integer> data = this.getData();
+            int port = data.get(1).intValue();
+            int lockState = data.get(2).intValue();
+            if (targetPort == port && this.isOK()) {
+                return lockState;
+            }
+        }
+        return -1;
+    }
+
+
+    /**
+     * 5555555555555555555555555
+     *
+     * @return byte[]
+     * @Author wanggl(lane)
+     * @Description //TODO 获取[获取所有锁的状态]的命令  有回复
+     * @Date 17:10 2018-12-27
+     * @Param [address]
+     **/
+    public static byte[] getStateCmd(int address) {
+        LmsPacket lmsPacket = new LmsPacket(address, LmsPacket.CMD_ALL_STATE);
+        return lmsPacket.getFullPack();
+    }
+
+    /**
+     * 5555555555555555555555555
+     *
+     * @return java.util.List<java.lang.Integer>
+     * @Author wanggl(lane)
+     * @Description //TODO [获取所有锁的状态]的命令的回复
+     * @Date 10:50 2018-12-28
+     * @Param [address, lmsPacket]
+     **/
+    public List<Integer> getStateCmdRes(int address) {
+        if (isMatch(address, LmsPacket.CMD_ALL_STATE)) {
+            List<Integer> data = this.getData();
+            //状态是否正确,长度是否匹配
+            int stateListLength = data.size() - 2;
+            if (this.isOK() && data.get(1).intValue() == stateListLength) {
+                return data.subList(data.get(2), data.size() - 1);
+            }
+        }
+        return null;
+    }
+
+
+    /**
+     * 66666666666666666666666666666666666666666
+     *
+     * @return byte[]
+     * @Author wanggl(lane)
+     * @Description //TODO 获取[主动上传门状态]的命令  无回复
+     * @Date 17:11 2018-12-27
+     * @Param [address]
+     **/
+    public static byte[] getAutoUploadStateCmd(int address) {
+        LmsPacket lmsPacket = new LmsPacket(address, LmsPacket.CMD_UPLOAD_STATE);
+        return lmsPacket.getFullPack();
+    }
+
+    /**
+     * 77777777777777777777777777777
+     *
+     * @return byte[]
+     * @Author wanggl(lane)
+     * @Description //TODO 获取[打开所有锁]的命令  有回复
+     * @Date 16:53 2018-12-27
+     * @Param [address]
+     **/
+    public static byte[] getOpenAllCmd(int address) {
+        LmsPacket lmsPacket = new LmsPacket(address, LmsPacket.CMD_OPEN_ALL);
+        return lmsPacket.getFullPack();
+    }
+
+    /**
+     * 77777777777777777777777777777
+     *
+     * @return int
+     * @Author wanggl(lane)
+     * @Description //TODO  [打开所有锁]  回复
+     * @Date 11:03 2018-12-28
+     * @Param [address]
+     **/
+    public int getOpenAllCmdRes(int address) {
+        if (isMatch(address, LmsPacket.CMD_OPEN_ALL)) {
+            List<Integer> data = this.getData();
+            return data.get(0).intValue();
+        }
+        return -1;
+    }
+
+
+    /**
+     * @return boolean
+     * @Author wanggl(lane)
+     * @Description //TODO 判断地址和命令是否一致
+     * @Date 09:25 2018-12-28
+     * @Param [address, lmsPacket]
+     **/
+    private boolean isMatch(int address, int cmd) {
+        return this.getAddress() == address && this.getCommand() == cmd;
+    }
 
     private Integer length;
 
@@ -270,7 +513,7 @@ public class LmsPacket extends Packet {
     private Integer check;
 
     public boolean isHeartbeat() {
-        if (this.command.intValue() == HEARTBEAT.intValue()) {
+        if (this.command.intValue() == CMD_HEARTBEAT.intValue()) {
             return true;
         }
         return false;
